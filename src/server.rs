@@ -3,7 +3,7 @@ use axum::{routing::get, Router};
 use std::net::SocketAddr;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
-use tracing::{info, instrument};
+use tracing::{info, info_span, instrument, Instrument};
 use askama::Template;
 
 #[derive(Template)] // this will generate the code...
@@ -20,7 +20,14 @@ async fn index() -> IndexTemplate<'static> {
 /// Get the application router
 pub(crate) fn router() -> Router {
     Router::new()
+        // Route the root to the index fn above
         .route("/", get(index))
+        // We can serve a single file like this:
+        //.route_service("/assets/foo.html", ServeFile::new("assets/foo.html"))
+        // Or we can serve a whole directory like this:
+        // note that we use .nest_service since it nests a lot our routes,
+        // .route_service would route on the root path to the service only
+        .nest_service("/assets", ServeDir::new("assets"))
         // Add tracing to the router (i.e. trace all of the above)
         .layer(TraceLayer::new_for_http())
 }
