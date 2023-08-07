@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 askama = { version = "0.12.0", features = ["with-axum"] }
+askama_axum = "0.3.0"
 axum = { version = "0.6.20", features = ["tracing"] }
 hyper = { version = "0.14.27", features = ["server"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
