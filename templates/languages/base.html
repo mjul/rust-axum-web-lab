@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{{ title }} - Axum Lab{% endblock %}</title>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+<div>
+    <a href="/">Home</a>
+</div>
+
+<div id="content">
+    {% block content %}
+    <p>Placeholder content.
+        This is displayed if the block is not defined in the child template,
+        or if the child calls the parent with <code>call super()</code> to render the parent block.
+    </p>
+    {% endblock %}
+</div>
+
+</body>
+</html>

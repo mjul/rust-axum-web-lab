@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Languages{% endblock %}
+
+{% block head %}
+<style>
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Languages</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Year</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for language in languages %}
+        <tr>
+            <td>{{ language.name }}</td>
+            <td>{{ language.year }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% call super() %}
+{% endblock %}

@@ -59,6 +59,14 @@ The application uses the [askama](https://github.com/djc/askama) template librar
 It appears that `askama` and `tera` are popular choices for templating in Rust. However, `askama`
 comes with `axum` bindings, so we will use that for now.
 
+#### Template Inheritance
+We can use template inheritance to improve consistency and reduce duplication in our templates.
+See https://djc.github.io/askama/template_syntax.html
+
+For example, see the `/languages` route in [`src/server.rs`](src/server.rs) and the corresponding
+templates in `templates/languages`, *e.g.* [`templates/languages/base.html`](templates/languages/base.html)
+and [`templates/languages/index.html`](templates/languages/index.html).
+
 ## License
 
 Published under the MIT License, see [LICENSE](LICENSE).
