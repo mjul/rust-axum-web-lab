@@ -37,6 +37,25 @@ We can serve a whole directory like this. Nnote that we use `.nest_service` sinc
         .nest_service("/assets", ServeDir::new("assets"));
 ```
 
+
+### Debugging Axum Handlers
+
+The error messages are terrible when the handler signatures are not correct.
+
+    Unfortunately Rust gives poor error messages if you try to use a function that doesn’t quite match what’s required by Handler.
+
+https://docs.rs/axum/latest/axum/handler/index.html#debugging-handler-type-errors
+
+Use `axum-macros` crate and its `debug_handler` macro to get better error messages. 
+Just apply it to the handler function:
+
+```rust
+#[debug_handler]
+async fn foo( /* ... */ ) -> impl IntoResponse {
+    // ...
+}
+```
+
 ### Tracing
 
 Tracing is enabled, see the use of the tracing macros like `info!`.
