@@ -1,8 +1,9 @@
 //! HTTP-based application server with routes
+use std::collections::HashMap;
 use std::net::SocketAddr;
 
 use askama::Template;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::handler::Handler;
 use axum::{routing::get, Router};
 use axum_macros::debug_handler;
@@ -59,7 +60,7 @@ const LANGUAGES: [Language; 6] = [
 #[derive(Template)]
 #[template(path = "languages/index.html")]
 struct LanguagesTemplate {
-    headline:String,
+    headline: String,
     languages: Vec<Language>, // the field name should match the variable name in the template
 }
 
@@ -73,14 +74,38 @@ async fn languages() -> LanguagesTemplate {
 // Use debug_handler to get better error messages in case the handler is not correctly defined
 #[debug_handler]
 // Path is an Axum Extract to get the matched value from the path (see below in the route configuration)
-async fn languages_from_year(Path(year): Path<u32>) -> LanguagesTemplate {
+async fn languages_from_year_path(Path(year): Path<u32>) -> LanguagesTemplate {
     let matches = LANGUAGES
         .iter()
         .filter(|l| l.year == year)
         .map(|l| l.clone())
         .collect();
     let headline = format!("Languages from {}", year);
-    LanguagesTemplate { headline, languages: matches }
+    LanguagesTemplate {
+        headline,
+        languages: matches,
+    }
+}
+
+async fn languages_from_year_query(
+    Query(params): Query<HashMap<String, String>>,
+) -> LanguagesTemplate {
+    // No error handling since this fn is a demonstration of Query extraction
+    let year = params
+        .get("year")
+        .expect("expected query parameter years ")
+        .parse::<u32>()
+        .expect("expected a valid number for year");
+    let matches = LANGUAGES
+        .iter()
+        .filter(|l| l.year == year)
+        .map(|l| l.clone())
+        .collect();
+    let headline = format!("Languages from {}", year);
+    LanguagesTemplate {
+        headline,
+        languages: matches,
+    }
 }
 
 #[derive(Clone)]
@@ -143,7 +168,9 @@ where
         // This is an example of a using templates with inheritance
         .route("/languages/", get(languages))
         // We can capture a part of the path as a parameter and pass it to the handler
-        .route("/languages/years/:year", get(languages_from_year))
+        .route("/languages/years/:year", get(languages_from_year_path))
+        // We can also capture the query parameters and get the year from the query string:
+        .route("/languages/year", get(languages_from_year_query))
         // We can have state in the application and pass it to the handlers
         // This changes the signature of the Router and the handler functions
         .nest("/stateful/", stateful_router())
