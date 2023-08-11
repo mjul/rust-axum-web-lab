@@ -59,11 +59,13 @@ const LANGUAGES: [Language; 6] = [
 #[derive(Template)]
 #[template(path = "languages/index.html")]
 struct LanguagesTemplate {
+    headline:String,
     languages: Vec<Language>, // the field name should match the variable name in the template
 }
 
 async fn languages() -> LanguagesTemplate {
     LanguagesTemplate {
+        headline: "Languages".to_string(),
         languages: LANGUAGES.into(),
     }
 }
@@ -91,12 +93,14 @@ impl AppState {
 #[debug_handler]
 async fn stateful_old_languages(State(app_state): State<AppState>) -> LanguagesTemplate {
     LanguagesTemplate {
+        headline: "Old Languages".to_string(),
         languages: app_state.old_languages.clone(),
     }
 }
 
 async fn stateful_new_languages(State(app_state): State<AppState>) -> LanguagesTemplate {
     LanguagesTemplate {
+        headline: "New Languages".to_string(),
         languages: app_state.new_languages.clone(),
     }
 }
