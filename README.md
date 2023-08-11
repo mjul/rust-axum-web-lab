@@ -37,6 +37,20 @@ We can serve a whole directory like this. Nnote that we use `.nest_service` sinc
         .nest_service("/assets", ServeDir::new("assets"));
 ```
 
+#### Path Parameters
+You can use path parameters to turn path segments into parameters to the handler function:
+```rust
+    let router = axum::routing::Router::new()
+        .route("/languages/years/:year", get(languages_from_year));
+```
+
+The handler function would look like this, using the `Path` extractor. It contains a 
+single value or a tuple if you match multiple path segments:
+
+```rust
+    // Path is an Axum Extract to get the matched value from the path (see below in the route configuration)
+    async fn languages_from_year(Path(year): Path<u32>) -> LanguagesTemplate { /* ... */ }
+```
 
 ### Debugging Axum Handlers
 

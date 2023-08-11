@@ -2,7 +2,7 @@
 use std::net::SocketAddr;
 
 use askama::Template;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::handler::Handler;
 use axum::{routing::get, Router};
 use axum_macros::debug_handler;
@@ -70,6 +70,19 @@ async fn languages() -> LanguagesTemplate {
     }
 }
 
+// Use debug_handler to get better error messages in case the handler is not correctly defined
+#[debug_handler]
+// Path is an Axum Extract to get the matched value from the path (see below in the route configuration)
+async fn languages_from_year(Path(year): Path<u32>) -> LanguagesTemplate {
+    let matches = LANGUAGES
+        .iter()
+        .filter(|l| l.year == year)
+        .map(|l| l.clone())
+        .collect();
+    let headline = format!("Languages from {}", year);
+    LanguagesTemplate { headline, languages: matches }
+}
+
 #[derive(Clone)]
 struct AppState {
     old_languages: Vec<Language>,
@@ -129,6 +142,8 @@ where
         // Route the /languages path to the languages fn above
         // This is an example of a using templates with inheritance
         .route("/languages/", get(languages))
+        // We can capture a part of the path as a parameter and pass it to the handler
+        .route("/languages/years/:year", get(languages_from_year))
         // We can have state in the application and pass it to the handlers
         // This changes the signature of the Router and the handler functions
         .nest("/stateful/", stateful_router())
