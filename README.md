@@ -29,8 +29,8 @@ We serve a single file on a single (non-nested) route like this:
         .route_service("/assets/foo.html", ServeFile::new("assets/foo.html"));
 ```
 
-We can serve a whole directory like this. Nnote that we use `.nest_service` since it nests a lot our routes,
-`.route_service` would route on the root path to the service only.
+We can serve a whole directory like this. Note that we use `.nest_service` since it nests all the routes,
+`.route_service` would route the root path to the service only.
 
 ```rust 
     let router = axum::routing::Router::new()
@@ -58,7 +58,8 @@ query parameters into an stringly typed HashMap of key-value pairs or a typed st
 
 ```rust
     // Stringly typed
-    async fn languages_from_year_query(Query(params): Query<HashMap<String, String>>) -> LanguagesTemplate { /* ... */ }
+    async fn languages_from_year_query(Query(params): Query<HashMap<String, String>>) 
+                -> LanguagesTemplate { /* ... */ }
 ```
 
 ```rust
@@ -71,7 +72,8 @@ query parameters into an stringly typed HashMap of key-value pairs or a typed st
       year_to_exclusive: Option<u32>,
     }
 
-    async fn languages_by_struct_query(filter: Query<LanguagesFilter>) -> LanguagesTemplate { /* ... */ }
+    async fn languages_by_struct_query(filter: Query<LanguagesFilter>) 
+                -> LanguagesTemplate { /* ... */ }
 ```
 
 ### Debugging Axum Handlers
