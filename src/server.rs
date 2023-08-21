@@ -7,6 +7,7 @@ use axum::extract::{Path, Query, State};
 use axum::handler::Handler;
 use axum::{routing::get, Router};
 use axum_macros::debug_handler;
+use serde::Deserialize;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{instrument, Instrument};
@@ -108,6 +109,54 @@ async fn languages_from_year_query(
     }
 }
 
+/// Axum can use `serde` to deserialize the query parameters into a struct
+#[derive(Deserialize)]
+pub(crate) struct LanguagesFilter {
+    year_from_inclusive: Option<u32>,
+    year_to_exclusive: Option<u32>,
+}
+
+impl LanguagesFilter {
+    /// Check if a language is accepted through the filter
+    fn accepts(&self, language: &Language) -> bool {
+        let year = language.year;
+        let matches_from = self.year_from_inclusive.map_or(true, |from| from <= year);
+        let matches_to = self.year_to_exclusive.map_or(true, |to| year < to);
+        matches_from && matches_to
+    }
+}
+
+/// We can define handlers with a typed struct instead of the raw query parameters
+async fn languages_by_struct_query(filter: Query<LanguagesFilter>) -> LanguagesTemplate {
+    // No error handling since this fn is a demonstration of Query extraction
+    let matches = LANGUAGES
+        .into_iter()
+        .filter(|l| filter.accepts(l))
+        .map(|l| l.clone())
+        .collect();
+    let headline = match (&filter.year_from_inclusive, &filter.year_to_exclusive) {
+        (Some(from), Some(to)) => {
+            format!(
+                "Languages from year {} (inclusive) to {} (exclusive)",
+                from, to
+            )
+        }
+        (Some(from), None) => {
+            format!("Languages from year {} and onwards", from)
+        }
+        (None, Some(to)) => {
+            format!("Languages before year {}", to)
+        }
+        (None, None) => {
+            format!("Languages from any year")
+        }
+    };
+    LanguagesTemplate {
+        headline,
+        languages: matches,
+    }
+}
+
 #[derive(Clone)]
 struct AppState {
     old_languages: Vec<Language>,
@@ -171,6 +220,8 @@ where
         .route("/languages/years/:year", get(languages_from_year_path))
         // We can also capture the query parameters and get the year from the query string:
         .route("/languages/year", get(languages_from_year_query))
+        // We can also use a struct to capture the query parameters
+        .route("/languages/filter", get(languages_by_struct_query))
         // We can have state in the application and pass it to the handlers
         // This changes the signature of the Router and the handler functions
         .nest("/stateful/", stateful_router())

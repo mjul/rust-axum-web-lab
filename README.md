@@ -52,6 +52,28 @@ single value or a tuple if you match multiple path segments:
     async fn languages_from_year(Path(year): Path<u32>) -> LanguagesTemplate { /* ... */ }
 ```
 
+#### Query Parameters
+The query parameters are extracted using the `Query` extractor. It can be used to extract the
+query parameters into an stringly typed HashMap of key-value pairs or a typed struct:
+
+```rust
+    // Stringly typed
+    async fn languages_from_year_query(Query(params): Query<HashMap<String, String>>) -> LanguagesTemplate { /* ... */ }
+```
+
+```rust
+    // Typed struct
+
+    /// Axum can use `serde` to deserialize the query parameters into a struct
+    #[derive(Deserialize)]
+    pub(crate) struct LanguagesFilter {
+      year_from_inclusive: Option<u32>,
+      year_to_exclusive: Option<u32>,
+    }
+
+    async fn languages_by_struct_query(filter: Query<LanguagesFilter>) -> LanguagesTemplate { /* ... */ }
+```
+
 ### Debugging Axum Handlers
 
 The error messages are terrible when the handler signatures are not correct.

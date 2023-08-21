@@ -11,6 +11,7 @@ askama_axum = "0.3.0"
 axum = { version = "0.6.20", features = ["tracing"] }
 axum-macros = "0.3.8"
 hyper = { version = "0.14.27", features = ["server"] }
+serde = { version = "1.0.185", features = ["derive"] }
 tokio = { version = "1.29.1", features = ["macros", "rt-multi-thread"] }
 tower = { version = "0.4.13", features = ["util"] }
 tower-http = { version = "0.4.3", features = ["fs", "trace"] }
