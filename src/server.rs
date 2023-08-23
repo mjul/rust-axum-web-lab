@@ -1,13 +1,15 @@
 //! HTTP-based application server with routes
 use std::collections::HashMap;
+use std::fmt;
 use std::net::SocketAddr;
+use std::str::FromStr;
 
 use askama::Template;
 use axum::extract::{Path, Query, State};
 use axum::handler::Handler;
 use axum::{routing::get, Router};
 use axum_macros::debug_handler;
-use serde::Deserialize;
+use serde::{de, Deserialize, Deserializer};
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::{instrument, Instrument};
@@ -240,4 +242,85 @@ pub(crate) async fn serve(socket_addr: &SocketAddr) {
         .serve(app.into_make_service())
         .await
         .unwrap()
+}
+
+/// Axum can use `serde` to deserialize the query parameters into a struct
+/// If we want to accept empty query string parameters as `None` we need to decorate the struct
+/// with `#[serde(deserialize_with = "empty_string_as_none")]` to use a bespoke
+/// deserializer that accepts empty strings as `None`
+/// Note that we do not use this in the application, but see the tests below.
+#[derive(Deserialize)]
+pub(crate) struct LanguagesFilterThatAcceptsEmptyQueryParameterValuesAsNone {
+    #[serde(deserialize_with = "empty_string_as_none")]
+    year_from_inclusive: Option<u32>,
+    #[serde(deserialize_with = "empty_string_as_none")]
+    year_to_exclusive: Option<u32>,
+}
+
+// Taken from documentation:
+// https://github.com/tokio-rs/axum/blob/main/examples/query-params-with-empty-strings/src/main.rs
+fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: FromStr,
+    T::Err: fmt::Display,
+{
+    let opt = Option::<String>::deserialize(de)?;
+    match opt.as_deref() {
+        None | Some("") => Ok(None),
+        Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::Uri;
+
+    use super::*;
+
+    #[test]
+    fn languages_filter_can_deserialize_when_all_query_string_params_are_present_and_valid() {
+        let uri = Uri::builder()
+            .path_and_query("/?year_from_inclusive=1950&year_to_exclusive=1970")
+            .build()
+            .unwrap();
+        let q = Query::<LanguagesFilter>::try_from_uri(&uri).unwrap();
+        assert_eq!(Some(1950), q.year_from_inclusive);
+        assert_eq!(Some(1970), q.year_to_exclusive);
+    }
+
+    #[test]
+    fn languages_filter_can_deserialize_when_all_query_string_params_are_missing() {
+        let uri = Uri::builder().path_and_query("/?").build().unwrap();
+        let q = Query::<LanguagesFilter>::try_from_uri(&uri).unwrap();
+        assert_eq!(None, q.year_from_inclusive);
+        assert_eq!(None, q.year_to_exclusive);
+    }
+
+    // Serde normally requires that all query strings parameters are valid when present (not present with empty value)
+    #[test]
+    fn languages_filter_cannot_deserialize_when_all_query_string_params_are_present_but_empty() {
+        let uri = Uri::builder()
+            .path_and_query("/?year_from_inclusive=&year_to_exclusive=")
+            .build()
+            .unwrap();
+        let actual = Query::<LanguagesFilter>::try_from_uri(&uri);
+        assert!(actual.is_err());
+    }
+
+    // The modified struct with the `#[serde(deserialize_with = "empty_string_as_none")]` attribute can
+    // deserialize in this case, too
+    #[test]
+    fn languages_filter_with_decoration_can_deserialize_when_all_query_string_params_are_present_but_empty(
+    ) {
+        let uri = Uri::builder()
+            .path_and_query("/?year_from_inclusive=&year_to_exclusive=")
+            .build()
+            .unwrap();
+        let q =
+            Query::<LanguagesFilterThatAcceptsEmptyQueryParameterValuesAsNone>::try_from_uri(&uri)
+                .unwrap();
+        assert_eq!(None, q.year_from_inclusive);
+        assert_eq!(None, q.year_to_exclusive);
+    }
 }

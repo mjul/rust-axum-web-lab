@@ -84,10 +84,12 @@ to see how to define the behaviour for these scenarios.
 
 ```rust
 #[derive(Deserialize)]
-    pub(crate) struct Foo {
-        #[serde(deserialize_with = "empty_string_as_none")]
-        x: Option<u32>,
-    }
+pub(crate) struct LanguagesFilterThatAcceptsEmptyQueryParameterValuesAsNone {
+  #[serde(deserialize_with = "empty_string_as_none")]
+  year_from_inclusive: Option<u32>,
+  #[serde(deserialize_with = "empty_string_as_none")]
+  year_to_exclusive: Option<u32>,
+}
 ```
 
 From https://github.com/tokio-rs/axum/blob/main/examples/query-params-with-empty-strings/src/main.rs 
@@ -106,9 +108,21 @@ fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
     Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
   }
 }
-
 ```
 
+#### Testing Query Parsing
+You can use the `try_from_uri` method of the `Query` extractor to test the query parsing like this.
+This is very useful when using bespoke `deserialize_with` functions.
+
+```rust 
+    #[test]
+    fn languages_filter_can_deserialize_when_all_query_string_params_are_present_and_valid() {
+        let uri = Uri::builder().path_and_query("/?year_from_inclusive=1950&year_to_exclusive=1970").build().unwrap();
+        let q = Query::<LanguagesFilter>::try_from_uri(&uri).unwrap();
+        assert_eq!(Some(1950), q.year_from_inclusive);
+        assert_eq!(Some(1970), q.year_to_exclusive);
+    }
+```
 
 ### Debugging Axum Handlers
 
