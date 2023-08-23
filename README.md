@@ -76,6 +76,40 @@ query parameters into an stringly typed HashMap of key-value pairs or a typed st
                 -> LanguagesTemplate { /* ... */ }
 ```
 
+##### Empty Strings and Missing Query Parameters
+You can get some errors for missing fields and empty fields in the query string when it is deserialized with `serde`.
+
+See the serde documentation for `#[serde(deserialize_with = ...)]`
+to see how to define the behaviour for these scenarios.
+
+```rust
+#[derive(Deserialize)]
+    pub(crate) struct Foo {
+        #[serde(deserialize_with = "empty_string_as_none")]
+        x: Option<u32>,
+    }
+```
+
+From https://github.com/tokio-rs/axum/blob/main/examples/query-params-with-empty-strings/src/main.rs 
+
+```rust 
+/// Serde deserialization decorator to map empty Strings to None,
+fn empty_string_as_none<'de, D, T>(de: D) -> Result<Option<T>, D::Error>
+  where
+          D: Deserializer<'de>,
+          T: FromStr,
+          T::Err: fmt::Display,
+{
+  let opt = Option::<String>::deserialize(de)?;
+  match opt.as_deref() {
+    None | Some("") => Ok(None),
+    Some(s) => FromStr::from_str(s).map_err(de::Error::custom).map(Some),
+  }
+}
+
+```
+
+
 ### Debugging Axum Handlers
 
 The error messages are terrible when the handler signatures are not correct.
